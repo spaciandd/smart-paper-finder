@@ -1,9 +1,9 @@
-name: paper-finder
+name: smart-paper-finder
 
 services:
-  paper-finder:
+  smart-paper-finder:
     build: .
-    image: paper-finder:local
+    image: smart-paper-finder:local
     volumes:
       - ./config.json:/app/config.json:ro
       - ./data:/app/data:ro

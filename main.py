@@ -1,4 +1,4 @@
-"""paper-finder: academic paper search with optional journal quartile matching.
+"""Smart Paper Finder: academic paper search with optional journal quartile matching.
 
 Run: python main.py
 Dependencies: pip install requests pandas openpyxl
@@ -21,7 +21,7 @@ from urllib3.util.retry import Retry
 import query
 from config import CONFIG
 
-LOG = logging.getLogger('paper-finder')
+LOG = logging.getLogger('smart-paper-finder')
 ROOT = Path(__file__).resolve().parent
 FIELDS = ['title', 'abstract', 'url', 'doi', 'publication_date', 'year', 'journal',
           'issn', 'paper_sources', 'quartile', 'quartile_source', 'quartile_year', 'quartile_category']
@@ -32,7 +32,7 @@ def session():
     retry = Retry(total=4, backoff_factor=1.5, status_forcelist=[429, 500, 502, 503, 504],
                   allowed_methods=['GET'], respect_retry_after_header=True)
     s.mount('https://', HTTPAdapter(max_retries=retry))
-    s.headers.update({'User-Agent': 'PaperFinder/1.0 (academic metadata research)'})
+    s.headers.update({'User-Agent': 'SmartPaperFinder/1.0 (academic metadata research)'})
     return s
 
 

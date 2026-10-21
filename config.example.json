@@ -1,5 +1,5 @@
 {
-  "query": "\"flood susceptibility\" AND (chenab OR indus) NOT review",
+  "query": "'flood susceptibility' AND (chenab OR indus) NOT review",
   "start_date": "2024-01-01",
   "end_date": null,
   "paper_sources": [

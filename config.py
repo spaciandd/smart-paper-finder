@@ -45,11 +45,16 @@ def load_config():
     if not path.exists():
         if not EXAMPLE_PATH.exists():
             raise FileNotFoundError(f'{path} not found. Copy config.example.json to config.json.')
-        logging.getLogger('paper-finder').warning(
+        logging.getLogger('smart-paper-finder').warning(
             '%s not found; using config.example.json. Copy it to config.json to customise.', path.name)
         path = EXAMPLE_PATH
     with open(path, encoding='utf-8') as f:
-        user = json.load(f)
+        try:
+            user = json.load(f)
+        except json.JSONDecodeError as exc:
+            hint = (" In JSON, write an escaped apostrophe as \\\\' (e.g. 'children\\\\'s health')."
+                    if 'escape' in exc.msg else '')
+            raise ValueError(f'{path}: invalid JSON: {exc}.{hint}') from None
     if not isinstance(user, dict):
         raise ValueError(f'{path}: top level must be a JSON object')
     unknown = sorted(set(user) - set(DEFAULTS))

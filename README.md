@@ -1,6 +1,6 @@
-# paper-finder
+# Smart Paper Finder
 
-Find journal papers across OpenAlex, Crossref and Semantic Scholar with one boolean query, e.g. `"flood susceptibility" AND (chenab OR indus) NOT review`. paper-finder searches all sources in parallel, deduplicates the results, optionally attaches journal quartiles (SCImago/JCR), and exports CSV, JSON or XLSX.
+Find journal papers across OpenAlex, Crossref and Semantic Scholar with one boolean query, e.g. `'flood susceptibility' AND (chenab OR indus) NOT review`. Smart Paper Finder searches all sources in parallel, deduplicates the results, optionally attaches journal quartiles (SCImago/JCR), and exports CSV, JSON or XLSX.
 
 ## Setup
 
@@ -62,23 +62,42 @@ The older `keywords` (list) + `keyword_mode` (`"AND"`/`"OR"`) settings still wor
 ### Query syntax
 
 ```json
-"query": "\"flood susceptibility\" AND (chenab OR indus OR punjab) NOT review"
+"query": "'flood susceptibility' AND (chenab OR indus OR punjab) NOT review"
 ```
 
 | Syntax | Meaning | Example |
 |---|---|---|
 | `word` | single term | `chenab` |
-| `"two words"` | exact phrase | `"flood susceptibility"` |
+| `'two words'` or `"two words"` | exact phrase | `'flood susceptibility'` |
 | `A AND B` | both | `flood AND mapping` |
 | `A B` | same as `A AND B` | `flood mapping` |
 | `A OR B` | either | `chenab OR indus` |
 | `NOT A` | exclude | `NOT review` |
 | `( ... )` | grouping | `(chenab OR indus) AND flood` |
+| `\'` | apostrophe inside a `'...'` phrase | `'children\'s health'` |
 
 - Operators must be **UPPERCASE**; lowercase `and`/`or`/`not` are treated as search words.
 - Precedence: `NOT` > `AND` > `OR`, so `a OR b AND c` means `a OR (b AND c)`. Use parentheses when in doubt.
-- Inside the JSON file, escape phrase quotes as `\"`.
+- Use single quotes for phrases in `config.json`, so they don't clash with the JSON string's double quotes.
 - Matching is a case-insensitive **substring** check on title + abstract, so `flood` also matches `floods` and `flooding`.
+
+#### Apostrophes and escaping
+
+A backslash makes the next character literal. Use it for an apostrophe inside a single-quoted phrase: the query `'children\'s health'` searches for the phrase *children's health*.
+
+JSON treats the backslash as its own escape character, so **in `config.json` you must write it twice**:
+
+```json
+"query": "'children\\'s health' AND flood"
+```
+
+A single backslash (`\'`) is invalid JSON and stops the run with an `invalid JSON` error.
+
+| You want to match | Write in `config.json` |
+|---|---|
+| the phrase *flood susceptibility* | `'flood susceptibility'` |
+| the phrase *children's health* | `'children\\'s health'` |
+| the single word *children's* | `children's` (no escape needed outside quotes) |
 
 How each source uses the query:
 
@@ -194,7 +213,7 @@ API keys are read from `config.json` as well.
 
 | Task | Command |
 |------|---------|
-| Run again after editing `config.json` (no rebuild needed) | `docker compose run --rm paper-finder` |
+| Run again after editing `config.json` (no rebuild needed) | `docker compose run --rm smart-paper-finder` |
 | Rebuild after changing `main.py`, `config.py` or `requirements.txt` | `docker compose build` (or `docker compose up --build`) |
 | Run in the background and follow the logs | `docker compose up -d` then `docker compose logs -f` |
 | Remove stopped containers and the network | `docker compose down` |
@@ -215,21 +234,21 @@ API keys are read from `config.json` as well.
 Linux/macOS:
 
 ```bash
-docker build -t paper-finder .
+docker build -t smart-paper-finder .
 docker run --rm \
   -v "$(pwd)/config.json:/app/config.json:ro" \
   -v "$(pwd)/data:/app/data:ro" \
   -v "$(pwd)/output:/app/output" \
-  paper-finder
+  smart-paper-finder
 ```
 
 Windows (PowerShell):
 
 ```powershell
-docker build -t paper-finder .
+docker build -t smart-paper-finder .
 docker run --rm `
   -v "${PWD}/config.json:/app/config.json:ro" `
   -v "${PWD}/data:/app/data:ro" `
   -v "${PWD}/output:/app/output" `
-  paper-finder
+  smart-paper-finder
 ```

@@ -1,12 +1,17 @@
-"""Boolean search queries, e.g. '"flood susceptibility" AND (chenab OR indus) NOT review'.
+r"""Boolean search queries, e.g. "'flood susceptibility' AND (chenab OR indus) NOT review".
 
-Syntax: quoted phrases or single words; AND, OR, NOT (uppercase); parentheses.
+Syntax: phrases in single or double quotes, or single words; AND, OR, NOT (uppercase);
+parentheses. Inside a phrase, escape its own quote with a backslash: 'children\'s health'.
+An apostrophe inside an unquoted word (children's) needs no escape.
 Adjacent terms without an operator are ANDed. Precedence: NOT > AND > OR.
 Matching is a case-insensitive literal substring check, so `flood` also matches `floods`.
 """
 import re
 
-TOKEN = re.compile(r'\s*(?:(\()|(\))|"([^"]*)"|([^\s()"]+))')
+# Phrases in "..." or '...'; a word is anything else up to whitespace, a paren or a quote.
+# A backslash escapes the next character (e.g. \' inside a single-quoted phrase).
+TOKEN = re.compile(r'''\s*(?:(\()|(\))|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|((?:[^\s()"'\\]|\\.)(?:[^\s()"\\]|\\.)*))''')
+ESCAPE = re.compile(r'\\(.)')
 OPERATORS = {'AND', 'OR', 'NOT'}
 
 
@@ -17,16 +22,18 @@ def tokenize(text):
         if not m or m.end() == pos:
             raise ValueError(f'query: cannot parse near {text[pos:]!r} (unbalanced quote?)')
         pos = m.end()
-        lp, rp, phrase, word = m.groups()
+        lp, rp, dq, sq, word = m.groups()
+        phrase = dq if dq is not None else sq
         if lp or rp:
             tokens.append(('(', None) if lp else (')', None))
         elif phrase is not None:
-            if phrase.strip():
-                tokens.append(('term', phrase.strip()))
+            phrase = ESCAPE.sub(r'\1', phrase).strip()
+            if phrase:
+                tokens.append(('term', phrase))
         elif word in OPERATORS:
             tokens.append((word, None))
         else:
-            tokens.append(('term', word))
+            tokens.append(('term', ESCAPE.sub(r'\1', word)))
     return tokens
 
 
@@ -112,6 +119,7 @@ def terms(node, positive_only=False):
 def _render(node, and_op, or_op, not_op, quote_all):
     kind, value = node
     if kind == 'term':
+        value = value.replace('"', ' ').strip()  # APIs only understand double-quoted phrases
         return f'"{value}"' if quote_all or ' ' in value else value
     if kind == 'not':
         return not_op + _render(value, and_op, or_op, not_op, quote_all)
