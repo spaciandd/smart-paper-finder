@@ -1,7 +1,7 @@
 """Load search settings from config.json (local, gitignored).
 
 Copy config.example.json to config.json and edit it. Set CONFIG_PATH to use a
-different file. API keys belong in environment variables / .env, not in JSON.
+different file. config.json also holds your API keys, so never commit it.
 """
 import json
 import logging
@@ -29,8 +29,8 @@ DEFAULTS = {
     'output_format': 'csv',  # csv, json, xlsx
     'output_path': 'output/papers.csv',
     'email': None,  # optional polite pool email for Crossref
-    'openalex_api_key': None,  # prefer environment OPENALEX_API_KEY
-    'semantic_scholar_api_key': None,  # prefer environment SEMANTIC_SCHOLAR_API_KEY
+    'openalex_api_key': None,  # required to page past the first OpenAlex results
+    'semantic_scholar_api_key': None,  # optional; avoids shared-rate-limit 429s
 }
 
 

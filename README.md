@@ -54,6 +54,8 @@ If `config.json` is missing, the tool falls back to `config.example.json` and lo
 | `output_format` | `"csv"` | `"csv"`, `"json"` or `"xlsx"` |
 | `output_path` | `"output/papers.csv"` | Output file; keep it under `output/` when using Docker |
 | `email` | `null` | Optional contact email for the Crossref polite pool |
+| `openalex_api_key` | `""` | OpenAlex API key; needed to page past the first results |
+| `semantic_scholar_api_key` | `""` | Optional Semantic Scholar API key; avoids `429` rate-limit errors |
 
 The older `keywords` (list) + `keyword_mode` (`"AND"`/`"OR"`) settings still work in place of `query`, but you can't use both.
 
@@ -88,14 +90,19 @@ How each source uses the query:
 
 Every paper is checked locally against the full query, so results are consistent across sources.
 
-**API keys are not stored in the JSON.** Put them in environment variables or a `.env` file (copy `.env.example` to `.env`; it is gitignored):
+### API keys
 
-```
-OPENALEX_API_KEY=...
-SEMANTIC_SCHOLAR_API_KEY=...
+API keys go in `config.json` along with the other settings, so you only have one file to manage:
+
+```json
+"openalex_api_key": "your-openalex-key",
+"semantic_scholar_api_key": "your-semantic-scholar-key"
 ```
 
-For local Python runs, set these as environment variables yourself, because `.env` is loaded automatically only by Docker Compose.
+- OpenAlex: get a free key at <https://openalex.org/settings/api>.
+- Semantic Scholar: request a free key at <https://www.semanticscholar.org/product/api>.
+
+Leave a key as `""` to run without it. `config.json` is gitignored, so the keys stay out of the repository. Never put real keys in `config.example.json`, because that file is committed.
 
 ## Ranking datasets
 
@@ -110,9 +117,9 @@ When `quartile_year` is `"publication_year"`, only exact publication-year matche
 ## API details and limitations
 
 - Sources are queried **in parallel**, and each requests only the fields it needs (OpenAlex 200 per page, Crossref up to 1000, Semantic Scholar up to 1000), so a typical run takes seconds.
-- OpenAlex: `title_and_abstract.search` filter; abstracts are reconstructed from the inverted index. An API key is required for paging beyond the first page of results (without one you get `401 Unauthorized`); get a free key from your OpenAlex account and set `OPENALEX_API_KEY`.
+- OpenAlex: `title_and_abstract.search` filter; abstracts are reconstructed from the inverted index. An API key is required for paging beyond the first page of results (without one you get `401 Unauthorized`); set `openalex_api_key` in `config.json`.
 - Crossref: metadata and abstracts where available; many records lack abstracts. Uses `query.bibliographic` with the positive query terms as a relevance search, so many candidates are dropped by the local check. Set `email` to use Crossref's faster polite pool.
-- Semantic Scholar: bulk search API (boolean queries, up to 1000 papers per request); optional `SEMANTIC_SCHOLAR_API_KEY` environment variable. Unauthenticated requests share a rate limit and may fail with `429 Too Many Requests`.
+- Semantic Scholar: bulk search API (boolean queries, up to 1000 papers per request); optional `semantic_scholar_api_key` in `config.json`. Unauthenticated requests share a rate limit and may fail with `429 Too Many Requests`.
 - If a source fails partway through, the records it already retrieved are kept.
 - All sources may rank/retrieve candidates differently; the local query check uses case-insensitive **literal substring** matching against title + abstract. Papers without an abstract can only match on their title, so strict `AND` queries may miss them.
 - `max_results_per_source` is the retrieval budget per API, not a guarantee of exhaustive results. `max_papers` is applied after deduplication and query/date filtering, **before** journal ranking filters; increase limits when quartile filtering yields few papers.
@@ -143,7 +150,7 @@ Docker Compose runs the tool in a container, so you don't need Python or any pac
 | `data/`       | `/app/data`        | read-only  | Optional ranking CSVs (`scimago.csv`, `jcr.csv`) |
 | `output/`     | `/app/output`      | read-write | Results (`papers.csv` / `.json` / `.xlsx`)       |
 
-API keys are read from a `.env` file in the project folder, which Compose loads automatically.
+API keys are read from `config.json` as well.
 
 ### Quick start
 
@@ -161,19 +168,7 @@ API keys are read from a `.env` file in the project folder, which Compose loads 
    Copy-Item config.example.json config.json
    ```
 
-2. **(Recommended) Add API keys.** Copy `.env.example` to `.env` and fill in the keys.
-
-   Linux/macOS:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Windows (PowerShell):
-
-   ```powershell
-   Copy-Item .env.example .env
-   ```
+2. **(Recommended) Add your API keys** to `config.json` (see [API keys](#api-keys)).
 
 3. **(Optional) Add ranking data.** If `quartile_source` is set, place a normalized `data/scimago.csv` or `data/jcr.csv` in `data/` (see [Ranking datasets](#ranking-datasets)).
 
@@ -205,21 +200,11 @@ API keys are read from a `.env` file in the project folder, which Compose loads 
 | Remove stopped containers and the network | `docker compose down` |
 | Remove the built image too | `docker compose down --rmi local` |
 
-You can also pass API keys for a single run without a `.env` file:
-
-```bash
-OPENALEX_API_KEY=your_key docker compose run --rm paper-finder
-```
-
-```powershell
-$env:OPENALEX_API_KEY = "your_key"; docker compose run --rm paper-finder
-```
-
 ### Notes and troubleshooting
 
 - **Config changes:** `config.json` is bind-mounted, so edits take effect on the next run without rebuilding. Code changes require `docker compose build`.
 - **`config.json is a directory`:** Docker created it because the file didn't exist when the container started. Delete the `config.json` folder, copy `config.example.json` to `config.json`, and run again.
-- **`401 Unauthorized` from OpenAlex / `429` from Semantic Scholar:** set the API keys in `.env` (see [API details](#api-details-and-limitations)), or remove that source from `paper_sources`.
+- **`401 Unauthorized` from OpenAlex / `429` from Semantic Scholar:** set the API keys in `config.json` (see [API keys](#api-keys)), or remove that source from `paper_sources`.
 - **`Saved 0 rows`:** the `Filter counts` log shows how many records were retrieved, how many contain each query term, and how many survive each filter. Loosen the query (more `OR` alternatives, shorter phrases) or raise `max_results_per_source`.
 - **Permission denied writing `output/` (Linux):** the container runs as non-root UID 10001. Make the folder writable by it with `sudo chown 10001:10001 output`, or use `chmod 777 output` for a quick local test. On Docker Desktop (Windows/macOS) this is normally handled automatically.
 - **Windows drive sharing:** if the project is on a drive other than `C:` (e.g. `D:\Papers\...`) and mounts appear empty, make sure Docker Desktop uses the WSL 2 backend or that the drive is shared under *Settings → Resources → File sharing*.
@@ -232,7 +217,6 @@ Linux/macOS:
 ```bash
 docker build -t paper-finder .
 docker run --rm \
-  --env-file .env \
   -v "$(pwd)/config.json:/app/config.json:ro" \
   -v "$(pwd)/data:/app/data:ro" \
   -v "$(pwd)/output:/app/output" \
@@ -244,11 +228,8 @@ Windows (PowerShell):
 ```powershell
 docker build -t paper-finder .
 docker run --rm `
-  --env-file .env `
   -v "${PWD}/config.json:/app/config.json:ro" `
   -v "${PWD}/data:/app/data:ro" `
   -v "${PWD}/output:/app/output" `
   paper-finder
 ```
-
-Drop `--env-file .env` if you haven't created a `.env` file.

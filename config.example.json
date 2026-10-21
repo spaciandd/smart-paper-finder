@@ -20,5 +20,7 @@
   "max_results_per_source": 300,
   "output_format": "csv",
   "output_path": "output/papers.csv",
-  "email": null
+  "email": null,
+  "openalex_api_key": "",
+  "semantic_scholar_api_key": ""
 }

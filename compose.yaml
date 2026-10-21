@@ -4,9 +4,6 @@ services:
   paper-finder:
     build: .
     image: paper-finder:local
-    environment:
-      OPENALEX_API_KEY: ${OPENALEX_API_KEY:-}
-      SEMANTIC_SCHOLAR_API_KEY: ${SEMANTIC_SCHOLAR_API_KEY:-}
     volumes:
       - ./config.json:/app/config.json:ro
       - ./data:/app/data:ro

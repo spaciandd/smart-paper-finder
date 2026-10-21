@@ -4,7 +4,6 @@ Run: python main.py
 Dependencies: pip install requests pandas openpyxl
 Ranking CSVs are user-provided; see README.md.
 """
-import os
 import re
 import time
 import logging
@@ -103,7 +102,7 @@ def record(title, abstract, doi, url, pubdate, journal, issn, source):
 
 
 def openalex(s, cfg):
-    key = cfg.get('openalex_api_key') or os.getenv('OPENALEX_API_KEY')
+    key = cfg.get('openalex_api_key')
     # Search title + abstract only (plain `search` also matches full text, which the
     # local filter would discard). Commas separate filters, so strip them from the query.
     search = query.to_openalex(cfg['query_ast']).replace(',', ' ')
@@ -171,7 +170,7 @@ def crossref(s, cfg):
 
 def semantic_scholar(s, cfg):
     # Bulk search supports boolean queries and returns up to 1000 papers per request.
-    key = cfg.get('semantic_scholar_api_key') or os.getenv('SEMANTIC_SCHOLAR_API_KEY')
+    key = cfg.get('semantic_scholar_api_key')
     headers = {'x-api-key': key} if key else None
     params = {'query': query.to_semantic_scholar(cfg['query_ast']),
               'fields': 'title,abstract,url,externalIds,publicationDate,year,journal'}
