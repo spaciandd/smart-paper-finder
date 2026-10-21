@@ -369,8 +369,10 @@ def main():
     if collected and not papers:
         LOG.warning('No record matches the query in its title/abstract; '
                     'check the per-term counts above and loosen the query (e.g. use OR).')
+    # Newest first (undated last), so max_papers keeps the most recent papers.
+    papers.sort(key=lambda p: p['publication_date'] or '', reverse=True)
     papers = papers[:cfg['max_papers']]
-    LOG.info('  %6s  %s', len(papers), f"max_papers ({cfg['max_papers']})")
+    LOG.info('  %6s  %s', len(papers), f"max_papers ({cfg['max_papers']}, newest first)")
     papers = apply_rankings(papers, cfg)
     if cfg.get('quartile_source'):
         ranked = sum(1 for p in papers if p.get('quartile'))

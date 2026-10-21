@@ -49,7 +49,7 @@ If `config.json` is missing, the tool falls back to `config.example.json` and lo
 | `subject_categories` | `[]` | Ranking categories to match; empty means any |
 | `ranking_files` | `data/scimago.csv`, `data/jcr.csv` | Paths to normalized ranking CSVs |
 | `missing_abstract_policy` | `"keep"` | `"keep"` or `"exclude"` papers without an abstract |
-| `max_papers` | `300` | Maximum papers after deduplication and filtering |
+| `max_papers` | `300` | Maximum papers after deduplication and filtering; the newest are kept |
 | `max_results_per_source` | `300` | Retrieval budget per API |
 | `output_format` | `"csv"` | `"csv"`, `"json"` or `"xlsx"` |
 | `output_path` | `"output/papers.csv"` | Output file; keep it under `output/` when using Docker |
@@ -149,7 +149,7 @@ When `quartile_year` is `"publication_year"`, only exact publication-year matche
 
 ## Output
 
-`output/papers.csv` by default; set `output_format` and matching `output_path` to use JSON or XLSX. Columns: title, abstract, url, doi, publication_date, year, journal, issn, paper_sources, quartile, quartile_source, quartile_year, quartile_category.
+`output/papers.csv` by default, sorted by `publication_date` with the newest papers first (undated papers last); set `output_format` and matching `output_path` to use JSON or XLSX. Columns: title, abstract, url, doi, publication_date, year, journal, issn, paper_sources, quartile, quartile_source, quartile_year, quartile_category.
 
 ## Running with Docker Compose (recommended)
 
