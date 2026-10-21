@@ -209,15 +209,35 @@ API keys are read from `config.json` as well.
 
    The container fetches the papers, writes the output file, and exits. Results go to `./output/` on your host, e.g. `output/papers.csv`.
 
-### Everyday commands
+### Run and clean up
 
-| Task | Command |
-|------|---------|
-| Run again after editing `config.json` (no rebuild needed) | `docker compose run --rm smart-paper-finder` |
-| Rebuild after changing `main.py`, `config.py` or `requirements.txt` | `docker compose build` (or `docker compose up --build`) |
-| Run in the background and follow the logs | `docker compose up -d` then `docker compose logs -f` |
-| Remove stopped containers and the network | `docker compose down` |
-| Remove the built image too | `docker compose down --rmi local` |
+**First time, or after a code change, build and run:**
+
+```bash
+docker compose up --build
+```
+
+**Run again after editing `config.json`** (no rebuild needed; `--rm` deletes the container when the search finishes, so stopped containers don't pile up):
+
+```bash
+docker compose run --rm smart-paper-finder
+```
+
+Results are written to `output/papers.csv`.
+
+**Clean up when you're done.** Remove the containers and network:
+
+```bash
+docker compose down
+```
+
+Also remove the built image:
+
+```bash
+docker compose down --rmi local
+```
+
+For everyday use, `docker compose run --rm smart-paper-finder` is all you need. Rebuild with `docker compose up --build` only after changing `main.py`, `query.py`, `config.py` or `requirements.txt`.
 
 ### Notes and troubleshooting
 
@@ -229,26 +249,8 @@ API keys are read from `config.json` as well.
 - **Windows drive sharing:** if the project is on a drive other than `C:` (e.g. `D:\Papers\...`) and mounts appear empty, make sure Docker Desktop uses the WSL 2 backend or that the drive is shared under *Settings → Resources → File sharing*.
 - **Ranking CSVs not found:** `.dockerignore` excludes `*.csv` from the image on purpose. Ranking files are supplied through the `data/` mount, so they must be in the host `data/` folder. The container never downloads licensed ranking datasets.
 
-### Without Compose (plain Docker)
+## License
 
-Linux/macOS:
+Released under the [MIT License](LICENSE). Copyright (c) 2026 spaciandd.
 
-```bash
-docker build -t smart-paper-finder .
-docker run --rm \
-  -v "$(pwd)/config.json:/app/config.json:ro" \
-  -v "$(pwd)/data:/app/data:ro" \
-  -v "$(pwd)/output:/app/output" \
-  smart-paper-finder
-```
-
-Windows (PowerShell):
-
-```powershell
-docker build -t smart-paper-finder .
-docker run --rm `
-  -v "${PWD}/config.json:/app/config.json:ro" `
-  -v "${PWD}/data:/app/data:ro" `
-  -v "${PWD}/output:/app/output" `
-  smart-paper-finder
-```
+The license covers this code only. Data returned by OpenAlex, Crossref and Semantic Scholar, and any SCImago/JCR ranking datasets you supply, remain subject to their own terms.
