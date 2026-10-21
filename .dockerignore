@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+output/
+*.zip
+*.csv
+!data/ranking_template.csv
+config.json
